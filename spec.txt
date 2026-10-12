@@ -1,0 +1,46 @@
+To support editing individual bits up to 8 bytes (64 bits) directly inside Neovim, the calculator needs to evolve into an interactive bit matrix or register inspector. Instead of just typing text expressions, you need a visual grid where you can navigate across bytes and bits, toggle them instantly, and watch the corresponding decimal, hex, and binary values update in real time.
+
+An ideal Neovim bit manipulator for up to 64 bits should feature the following layout and workflow:
+1. The Interactive Bit-Matrix UI
+
+When you invoke the bit-edit mode, a floating window should open displaying the 64 bits broken down into manageable chunks (typically grouped by bytes or 16-bit words) with clear indices from the Most Significant Bit (MSB) down to the Least Significant Bit (LSB).
+Plaintext
+
+╭─────────────────────────────────────────────── 64-bit Register Inspector ───────────────────────────────────────────────╮
+│ Hex:   0x000000000000ff0f                                                                                               │
+│ Dec:   65295                                                                                                            │
+├─────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────┤
+│ Byte 7 (MSB)        Byte 6              Byte 5              Byte 4              Byte 3              Byte 2              │
+│ 7654 3210           7654 3210           7654 3210           7654 3210           7654 3210           7654 3210           │
+│ 0000 0000           0000 0000           0000 0000           0000 0000           0000 0000           0000 0000           │
+│                                                                                                                         │
+│ Byte 1              Byte 0 (LSB)                                                                                        │
+│ 7654 3210           7654 3210                                                                                           │
+│ 0000 0000           1111 [1]111  <-- Active Cursor (Bit 3 of Byte 0)                                                    │
+├─────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────┤
+│ Controls: [h/l/j/k] Move Cursor  |  [<Space> or x] Toggle Bit  |  [s] Swap Endian  |  [y] Yank Value  |  [q] Quit        │
+╰─────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────╯
+
+2. Core Interaction & Workflow Design
+
+    Buffer-Based Grid Navigation: The buffer should use custom Neovim extmarks or virtual text to make individual 0 and 1 characters fully selectable and interactive. Standard Vim motions (h, l, j, k, w, b) allow you to glide naturally across the 64-bit grid.
+
+    Instant Bit Flipping: Pressing <Space>, x, or ~ while your cursor is over a bit immediately flips its state from 0 to 1 (or vice versa).
+
+    Live Global Synchronization: The moment a bit is toggled, an event listener recalculates the 64-bit integer value and instantly updates the Header display (Hex, Decimal, Octal, Signed/Unsigned interpretations) without needing to close or submit the buffer.
+
+    Bitwise Shift & Rotate Quick Actions: Keymaps to perform quick bulk operations on the entire 8-byte value:
+
+        <C-h> / <C-l>: Shift bits left or right by 1.
+
+        r / R: Rotate bits left or right.
+
+        i: Invert (bitwise NOT) the entire 64-bit word.
+
+3. Essential Modifiers & Settings
+
+    Word-Size Zooming: While it defaults to 64 bits (8 bytes), you should be able to toggle views quickly via a keymap (e.g., pressing 8 for 8-bit, 1 for 16-bit, 3 for 32-bit, or 6 for full 64-bit) so your workspace isn't cluttered when working with smaller flags or registers.
+
+    Endianness Toggle (s key): Easily switch the visual layout between Big-Endian and Little-Endian ordering, which is invaluable when debugging network packets or low-level memory structures.
+
+    Frictionless Insertion (y key): Pressing y yanks the active value in your preferred format (e.g., raw hex string like 0x000000000000ff0f or decimal) directly into the + register, ready to be pasted straight into your C, Rust, or Go source code.
